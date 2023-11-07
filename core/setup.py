@@ -25,7 +25,7 @@ with open(os.path.join(this_directory, "README.md")) as f:
 
 
 package_name = "dbt-core"
-package_version = "1.7.0"
+package_version = "1.7.1"
 description = """With dbt, data analysts and engineers can build analytics \
 the way engineers build applications."""
 
@@ -49,7 +49,7 @@ setup(
         # ----
         # dbt-core uses these packages deeply, throughout the codebase, and there have been breaking changes in past patch releases (even though these are major-version-one).
         # Pin to the patch or minor version, and bump in each new minor version of dbt-core.
-        "agate~=1.7.0",
+        "agate~=1.7.1",
         "Jinja2~=3.1.2",
         "mashumaro[msgpack]~=3.9",
         # ----
