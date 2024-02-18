@@ -26,6 +26,12 @@
   -- `BEGIN` happens here:
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
+
+  {% call statement('end') -%}
+      end;
+  {%- endcall %}
+
+
   -- build model
   {% call statement('main') -%}
     {{ get_create_table_as_sql(False, intermediate_relation, sql) }}

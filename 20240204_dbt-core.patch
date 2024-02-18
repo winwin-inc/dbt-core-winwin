@@ -1,0 +1,96 @@
+diff --git a/core/dbt/adapters/sql/connections.py b/core/dbt/adapters/sql/connections.py
+index 7347d961d..81ba34c6d 100644
+--- a/core/dbt/adapters/sql/connections.py
++++ b/core/dbt/adapters/sql/connections.py
+@@ -127,7 +127,8 @@ class SQLConnectionManager(BaseConnectionManager):
+                 rows = cursor.fetchmany(limit)
+             else:
+                 rows = cursor.fetchall()
+-            data = cls.process_results(column_names, rows)
++            if len(column_names) > 0:    
++                data = cls.process_results(column_names, rows)
+ 
+         return dbt.clients.agate_helper.table_from_data_flat(data, column_names)
+ 
+diff --git a/core/dbt/include/global_project/macros/materializations/models/table.sql b/core/dbt/include/global_project/macros/materializations/models/table.sql
+index 3d1122efa..fd5e4ffe3 100644
+--- a/core/dbt/include/global_project/macros/materializations/models/table.sql
++++ b/core/dbt/include/global_project/macros/materializations/models/table.sql
+@@ -26,6 +26,12 @@
+   -- `BEGIN` happens here:
+   {{ run_hooks(pre_hooks, inside_transaction=True) }}
+ 
++
++  {% call statement('end') -%}
++      end;
++  {%- endcall %}
++
++
+   -- build model
+   {% call statement('main') -%}
+     {{ get_create_table_as_sql(False, intermediate_relation, sql) }}
+diff --git a/core/dbt/include/global_project/macros/materializations/models/view.sql b/core/dbt/include/global_project/macros/materializations/models/view.sql
+index 59ac6c4b9..54a59896e 100644
+--- a/core/dbt/include/global_project/macros/materializations/models/view.sql
++++ b/core/dbt/include/global_project/macros/materializations/models/view.sql
+@@ -37,6 +37,11 @@
+   -- `BEGIN` happens here:
+   {{ run_hooks(pre_hooks, inside_transaction=True) }}
+ 
++  {% call statement('end') -%}
++      end;
++  {%- endcall %}
++
++
+   -- build model
+   {% call statement('main') -%}
+     {{ get_create_view_as_sql(intermediate_relation, sql) }}
+diff --git a/plugins/postgres/dbt/adapters/postgres/connections.py b/plugins/postgres/dbt/adapters/postgres/connections.py
+index 50c609f54..899488092 100644
+--- a/plugins/postgres/dbt/adapters/postgres/connections.py
++++ b/plugins/postgres/dbt/adapters/postgres/connections.py
+@@ -73,10 +73,13 @@ class PostgresConnectionManager(SQLConnectionManager):
+     @contextmanager
+     def exception_handler(self, sql):
+         try:
++
++            logger.debug(f"test excute sql: {sql}")
++
+             yield
+ 
+         except psycopg2.DatabaseError as e:
+-            logger.debug("Postgres error: {}".format(str(e)))
++            logger.debug("Postgres error: {}, sql: ".format(str(e), sql ))
+ 
+             try:
+                 self.rollback_if_open()
+@@ -145,6 +148,8 @@ class PostgresConnectionManager(SQLConnectionManager):
+             )
+             if credentials.role:
+                 handle.cursor().execute("set role {}".format(credentials.role))
++            
++                
+             return handle
+ 
+         retryable_exceptions = [
+diff --git a/plugins/postgres/dbt/include/postgres/macros/adapters.sql b/plugins/postgres/dbt/include/postgres/macros/adapters.sql
+index ee864e9b7..9ca45a102 100644
+--- a/plugins/postgres/dbt/include/postgres/macros/adapters.sql
++++ b/plugins/postgres/dbt/include/postgres/macros/adapters.sql
+@@ -8,14 +8,14 @@
+     temporary
+   {%- elif unlogged -%}
+     unlogged
+-  {%- endif %} table {{ relation }}
++  {%- endif %} table {{ relation.schema }}.{{ relation.identifier }}
+   {% set contract_config = config.get('contract') %}
+   {% if contract_config.enforced %}
+     {{ get_assert_columns_equivalent(sql) }}
+   {% endif -%}
+   {% if contract_config.enforced and (not temporary) -%}
+       {{ get_table_columns_and_constraints() }} ;
+-    insert into {{ relation }} (
++    insert into {{ relation.schema }}.{{ relation.identifier }} (
+       {{ adapter.dispatch('get_column_names', 'dbt')() }}
+     )
+     {%- set sql = get_select_subquery(sql) %}

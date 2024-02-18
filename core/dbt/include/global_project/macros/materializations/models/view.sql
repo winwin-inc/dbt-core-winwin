@@ -37,6 +37,11 @@
   -- `BEGIN` happens here:
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
+  {% call statement('end') -%}
+      end;
+  {%- endcall %}
+
+
   -- build model
   {% call statement('main') -%}
     {{ get_create_view_as_sql(intermediate_relation, sql) }}

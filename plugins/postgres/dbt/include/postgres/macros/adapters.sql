@@ -8,14 +8,14 @@
     temporary
   {%- elif unlogged -%}
     unlogged
-  {%- endif %} table {{ relation }}
+  {%- endif %} table {{ relation.schema }}.{{ relation.identifier }}
   {% set contract_config = config.get('contract') %}
   {% if contract_config.enforced %}
     {{ get_assert_columns_equivalent(sql) }}
   {% endif -%}
   {% if contract_config.enforced and (not temporary) -%}
       {{ get_table_columns_and_constraints() }} ;
-    insert into {{ relation }} (
+    insert into {{ relation.schema }}.{{ relation.identifier }} (
       {{ adapter.dispatch('get_column_names', 'dbt')() }}
     )
     {%- set sql = get_select_subquery(sql) %}

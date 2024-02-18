@@ -127,7 +127,8 @@ class SQLConnectionManager(BaseConnectionManager):
                 rows = cursor.fetchmany(limit)
             else:
                 rows = cursor.fetchall()
-            data = cls.process_results(column_names, rows)
+            if len(column_names) > 0:    
+                data = cls.process_results(column_names, rows)
 
         return dbt.clients.agate_helper.table_from_data_flat(data, column_names)
 

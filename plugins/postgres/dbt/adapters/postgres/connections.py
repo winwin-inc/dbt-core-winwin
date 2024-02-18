@@ -73,10 +73,13 @@ class PostgresConnectionManager(SQLConnectionManager):
     @contextmanager
     def exception_handler(self, sql):
         try:
+
+            logger.debug(f"test excute sql: {sql}")
+
             yield
 
         except psycopg2.DatabaseError as e:
-            logger.debug("Postgres error: {}".format(str(e)))
+            logger.debug("Postgres error: {}, sql: ".format(str(e), sql ))
 
             try:
                 self.rollback_if_open()
@@ -145,6 +148,8 @@ class PostgresConnectionManager(SQLConnectionManager):
             )
             if credentials.role:
                 handle.cursor().execute("set role {}".format(credentials.role))
+            
+                
             return handle
 
         retryable_exceptions = [
